@@ -1,0 +1,93 @@
+organization: "Hex Labs"
+version: "1.0.0"
+setupDate: "2025-06-18"
+
+# Database Configuration
+database:
+  type: "sqlite"  # or postgresql
+  connection: "sqlite:///./hex_loadbench.db"
+  # For PostgreSQL:
+  # connection: "postgresql://user:password@localhost:5432/hex_loadbench"
+
+# API Server Configuration
+api_server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+  cors_origins: ["http://localhost:3000", "http://localhost:8080"]
+
+# Auth Gateway Configuration
+auth_gateway:
+  host: "0.0.0.0"
+  port: 8080
+  jwt_secret: "your-super-secret-jwt-key-change-in-production"
+  token_expiry: "24h"
+
+# Job Queue Configuration
+job_queue:
+  redis_url: "redis://localhost:6379"
+  max_concurrent_jobs: 10
+  job_timeout: 3600  # 1 hour
+
+# Load Testing Configuration
+load_testing:
+  k6_binary: "/usr/bin/k6"
+  default_timeout: 300
+  max_rps_per_test: 10000
+  max_concurrent_users_per_test: 1000
+  regions: ["us-east-1", "us-west-2", "eu-west-1"]
+
+# Subscription Plans
+plans:
+  free:
+    name: "Free"
+    max_daily_rps: 1000
+    max_concurrent_tests: 1
+    max_test_duration: 600
+    cost: 0
+  basic:
+    name: "Basic"
+    max_daily_rps: 10000
+    max_concurrent_tests: 2
+    max_test_duration: 3600
+    cost: 29
+  pro:
+    name: "Pro"
+    max_daily_rps: 100000
+    max_concurrent_tests: 5
+    max_test_duration: 14400
+    cost: 99
+  vip:
+    name: "VIP"
+    max_daily_rps: 500000
+    max_concurrent_tests: 10
+    max_test_duration: 86400
+    cost: 299
+
+# Notification Settings
+notifications:
+  telegram:
+    bot_token: ""
+    default_chat_id: ""
+  slack:
+    webhook_url: ""
+    default_channel: "#load-testing"
+  email:
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""
+    password: ""
+
+# Audit & Compliance
+audit:
+  log_retention_days: 365
+  immutable_logs: true
+  gdpr_compliance: true
+  require_auth_document: true
+
+# Safety Limits
+safety:
+  global_daily_rps_cap: 10000000
+  emergency_kill_switch: false
+  rate_limit_per_ip: 1000
+  allowed_target_domains: []  # Empty means allow all, specify whitelist if needed

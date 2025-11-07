@@ -1,0 +1,64 @@
+# HEX-LoadBench Development TODO
+
+## Project Structure & Core Setup
+- [x] Create main project directory structure
+- [x] Set up configuration files and schemas
+- [x] Create project banner and README skeleton
+- [x] Initialize Docker configuration
+
+## Backend Services (Python/FastAPI)
+- [x] Set up FastAPI project structure
+- [x] Implement user management models
+- [x] Create authentication and authorization system
+- [x] Implement API key management
+- [x] Set up database models and migrations
+- [x] Create test definition and scheduling APIs
+- [x] Implement audit logging system
+
+## Load Testing Integration
+- [x] Set up k6 integration
+- [x] Create Python asyncio-based runner fallback
+- [x] Implement load profile handlers (ramp-up, steady-state, spike, soak)
+- [ ] Create real-time telemetry collection
+
+## Job Queue & Scheduling (Node.js)
+- [ ] Set up BullMQ job queue system
+- [ ] Implement test scheduling logic
+- [ ] Create WebSocket for real-time metrics
+- [ ] Set up notification system
+
+## Auth Gateway (Java/Spring Boot)
+- [ ] Create Spring Boot gateway service
+- [ ] Implement token validation
+- [ ] Set up policy checking middleware
+- [ ] Create audit validation endpoints
+
+## Frontend Dashboard (HTML/CSS/JS)
+- [x] Create responsive dashboard layout
+- [x] Implement test creation interface
+- [x] Build real-time monitoring dashboard
+- [x] Add report visualization components
+
+## DevOps & Deployment
+- [x] Create Dockerfiles for all services
+- [x] Set up docker-compose configuration
+- [x] Create setup scripts for deployment
+- [ ] Generate Helm chart for Kubernetes
+
+## Testing & CI
+- [ ] Write unit tests for core logic
+- [ ] Create integration test suite
+- [ ] Set up GitHub Actions CI/CD
+- [ ] Create demo target for testing
+
+## Documentation & Compliance
+- [x] Complete README.md with all instructions
+- [x] Create LEGAL.md with disclaimers
+- [x] Write SECURITY.md
+- [x] Generate OpenAPI specifications
+- [x] Create Termux usage notes
+
+## Final Deliverables
+- [x] Create project ZIP archive
+- [x] Verify all components work together
+- [x] Final testing and validation

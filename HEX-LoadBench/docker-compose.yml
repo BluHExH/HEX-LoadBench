@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    container_name: hex-loadbench-db
+    environment:
+      POSTGRES_DB: hex_loadbench
+      POSTGRES_USER: hexuser
+      POSTGRES_PASSWORD: hexpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - hex-network
+
+  # Redis for Job Queue
+  redis:
+    image: redis:7-alpine
+    container_name: hex-loadbench-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hex-network
+
+  # Backend API (Python/FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hex-loadbench-backend
+    environment:
+      - DATABASE_URL=postgresql://hexuser:hexpass@postgres:5432/hex_loadbench
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./config:/app/config
+      - ./runner:/app/runner
+    networks:
+      - hex-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Auth Gateway (Java/Spring Boot)
+  auth-gateway:
+    build:
+      context: ./auth-gateway
+      dockerfile: Dockerfile
+    container_name: hex-loadbench-auth
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DATABASE_URL=postgresql://hexuser:hexpass@postgres:5432/hex_loadbench
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - API_BACKEND_URL=http://backend:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - backend
+    networks:
+      - hex-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Job Queue Service (Node.js)
+  job-queue:
+    build:
+      context: ./job-queue
+      dockerfile: Dockerfile
+    container_name: hex-loadbench-jobqueue
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - API_BACKEND_URL=http://backend:8000
+      - AUTH_GATEWAY_URL=http://auth-gateway:8080
+    ports:
+      - "9000:9000"
+    depends_on:
+      - redis
+      - backend
+      - auth-gateway
+    volumes:
+      - ./runner:/app/runner
+      - ./config:/app/config
+    networks:
+      - hex-network
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hex-loadbench-frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_AUTH_URL=http://localhost:8080
+      - REACT_APP_WS_URL=ws://localhost:9000
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+      - auth-gateway
+      - job-queue
+    networks:
+      - hex-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: hex-loadbench-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+      - auth-gateway
+    networks:
+      - hex-network
+
+  # Prometheus for Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hex-loadbench-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - hex-network
+
+  # Grafana for Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hex-loadbench-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - hex-network
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  hex-network:
+    driver: bridge

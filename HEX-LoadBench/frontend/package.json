@@ -1,0 +1,36 @@
+{
+  "name": "hex-loadbench-frontend",
+  "version": "1.0.0",
+  "description": "Frontend dashboard for HEX-LoadBench load testing platform",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "dev": "python -m http.server 3000",
+    "build": "echo 'No build step required for static HTML'",
+    "serve": "http-server . -p 3000 -c-1",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "load-testing",
+    "performance",
+    "dashboard",
+    "monitoring"
+  ],
+  "author": "HEX Labs",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hexlabs/hex-loadbench.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hexlabs/hex-loadbench/issues"
+  },
+  "homepage": "https://github.com/hexlabs/hex-loadbench#readme"
+}

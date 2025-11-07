@@ -1,0 +1,1270 @@
+openapi: 3.0.3
+info:
+  title: HEX-LoadBench API
+  description: |
+    Load-Testing & API Stress Test Platform
+    
+    ## WARNING
+    THIS TOOL IS FOR AUTHORIZED PERFORMANCE TESTING ONLY.
+    
+    Users are responsible for ensuring they have proper authorization before testing any systems.
+    
+    ## Authentication
+    This API uses JWT tokens and API keys for authentication.
+    
+    - JWT tokens are used for user authentication (session-based)
+    - API keys are used for service-to-service communication
+    - All endpoints require authentication except `/health` and `/docs`
+    
+  version: 1.0.0
+  contact:
+    name: HEX-LoadBench Support
+    email: support@hexloadbench.com
+    url: https://hexloadbench.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.hexloadbench.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health check endpoint
+      description: Returns the health status of the API server and its dependencies
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: number
+                    format: float
+                    example: 1718640000.123
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  database:
+                    type: string
+                    example: healthy
+                  emergency_kill_switch:
+                    type: boolean
+                    example: false
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return access token
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user info
+      description: Returns information about the currently authenticated user
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Returns detailed profile information for the current user
+      operationId: getCurrentUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithSubscription'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me:
+    put:
+      tags:
+        - Users
+      summary: Update current user profile
+      description: Update profile information for the current user
+      operationId: updateCurrentUserProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/api-keys:
+    post:
+      tags:
+        - Users
+      summary: Create API key
+      description: Create a new API key for the current user
+      operationId: createApiKey
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIKeyCreate'
+      responses:
+        '200':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyCreateResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: API key limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/api-keys:
+    get:
+      tags:
+        - Users
+      summary: List API keys
+      description: Returns all API keys belonging to the current user
+      operationId: listApiKeys
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: API keys retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIKeyResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests:
+    get:
+      tags:
+        - Tests
+      summary: List test definitions
+      description: Returns a paginated list of test definitions
+      operationId: listTests
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          description: Filter by test status
+          required: false
+          schema:
+            $ref: '#/components/schemas/TestStatus'
+        - name: search
+          in: query
+          description: Search term for test names
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tests retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests:
+    post:
+      tags:
+        - Tests
+      summary: Create test definition
+      description: Create a new load test definition
+      operationId: createTest
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestDefinitionCreate'
+      responses:
+        '201':
+          description: Test created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestDefinitionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests/{test_id}:
+    get:
+      tags:
+        - Tests
+      summary: Get test definition
+      description: Returns a specific test definition by ID
+      operationId: getTest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: test_id
+          in: path
+          required: true
+          description: Test ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Test retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestDefinitionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Test not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests/{test_id}/start:
+    post:
+      tags:
+        - Tests
+      summary: Start test execution
+      description: Start executing a load test
+      operationId: startTest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: test_id
+          in: path
+          required: true
+          description: Test ID
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestStartRequest'
+      responses:
+        '200':
+          description: Test started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestExecutionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Test not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Test is already running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests/{test_id}/stop:
+    post:
+      tags:
+        - Tests
+      summary: Stop test execution
+      description: Stop a running test
+      operationId: stopTest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: test_id
+          in: path
+          required: true
+          description: Test ID
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestStopRequest'
+      responses:
+        '200':
+          description: Test stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestExecutionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Test not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tests/{test_id}/executions:
+    get:
+      tags:
+        - Tests
+      summary: Get test executions
+      description: Returns all executions for a specific test
+      operationId: getTestExecutions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: test_id
+          in: path
+          required: true
+          description: Test ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Executions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TestExecutionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Test not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /plans/subscriptions:
+    get:
+      tags:
+        - Plans
+      summary: List subscription plans
+      description: Returns available subscription plans
+      operationId: listSubscriptionPlans
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: public_only
+          in: query
+          description: Return only public plans
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlanResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /plans/my-subscription:
+    get:
+      tags:
+        - Plans
+      summary: Get current user subscription
+      description: Returns the current user's subscription information
+      operationId: getMySubscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subscription retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscriptionWithPlan'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No active subscription found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /plans/usage:
+    get:
+      tags:
+        - Plans
+      summary: Get usage report
+      description: Returns current usage and limits for the user
+      operationId: getUsageReport
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usage report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageReport'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/overview:
+    get:
+      tags:
+        - Administration
+      summary: Get system overview
+      description: Returns system statistics and overview (admin only)
+      operationId: getSystemOverview
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemOverview'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/emergency-stop:
+    post:
+      tags:
+        - Administration
+      summary: Emergency stop all tests
+      description: Stop all running tests immediately (admin only)
+      operationId: emergencyStopTests
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All tests stopped successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "All running tests stopped"
+                  stopped_tests:
+                    type: integer
+                    example: 5
+                  stopped_executions:
+                    type: integer
+                    example: 3
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        status_code:
+          type: integer
+          description: HTTP status code
+        timestamp:
+          type: number
+          format: float
+          description: Unix timestamp
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+        password:
+          type: string
+          description: User password
+          example: "password123"
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        token_type:
+          type: string
+          enum: [bearer]
+          example: "bearer"
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserRole:
+      type: string
+      enum:
+        - admin
+        - operator
+        - viewer
+      description: User role in the system
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+        email:
+          type: string
+          format: email
+          description: User email
+        username:
+          type: string
+          description: Unique username
+        full_name:
+          type: string
+          description: User's full name
+        role:
+          $ref: '#/components/schemas/UserRole'
+        is_active:
+          type: boolean
+          description: Whether the user is active
+        is_verified:
+          type: boolean
+          description: Whether the user email is verified
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        last_login:
+          type: string
+          format: date-time
+          description: Last login timestamp
+        organization_id:
+          type: integer
+          description: Organization ID
+
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: New email address
+        username:
+          type: string
+          description: New username
+        full_name:
+          type: string
+          description: New full name
+        role:
+          $ref: '#/components/schemas/UserRole'
+        is_active:
+          type: boolean
+          description: Account active status
+
+    UserSubscriptionWithPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Subscription ID
+        user_id:
+          type: integer
+          description: User ID
+        plan_id:
+          type: string
+          description: Plan identifier
+        status:
+          type: string
+          enum: [active, expired, cancelled, suspended]
+          description: Subscription status
+        start_date:
+          type: string
+          format: date-time
+          description: Subscription start date
+        end_date:
+          type: string
+          format: date-time
+          description: Subscription end date
+        billing_cycle:
+          type: string
+          enum: [monthly, yearly]
+          description: Billing cycle
+        current_daily_rps:
+          type: integer
+          description: Current daily RPS usage
+        current_concurrent_tests:
+          type: integer
+          description: Current concurrent tests
+        plan:
+          $ref: '#/components/schemas/SubscriptionPlanResponse'
+
+    SubscriptionPlanResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Plan ID
+        plan_id:
+          type: string
+          description: Plan identifier
+        name:
+          type: string
+          description: Plan name
+        description:
+          type: string
+          description: Plan description
+        max_daily_rps:
+          type: integer
+          description: Maximum daily RPS allowed
+        max_concurrent_tests:
+          type: integer
+          description: Maximum concurrent tests allowed
+        max_test_duration:
+          type: integer
+          description: Maximum test duration in seconds
+        max_users_per_organization:
+          type: integer
+          description: Maximum users per organization
+        max_api_keys:
+          type: integer
+          description: Maximum API keys allowed
+        monthly_cost:
+          type: number
+          format: float
+          description: Monthly cost
+        is_active:
+          type: boolean
+          description: Whether the plan is active
+        is_public:
+          type: boolean
+          description: Whether the plan is publicly available
+
+    APIKeyCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: API key name
+        description:
+          type: string
+          description: API key description
+        scopes:
+          type: array
+          items:
+            type: string
+          description: List of allowed scopes
+        expires_at:
+          type: string
+          format: date-time
+          description: API key expiration date
+        justification:
+          type: string
+          description: Reason for creating the API key
+
+    APIKeyResponse:
+      type: object
+      properties:
+        key_id:
+          type: string
+          description: API key identifier
+        name:
+          type: string
+          description: API key name
+        description:
+          type: string
+          description: API key description
+        scopes:
+          type: array
+          items:
+            type: string
+          description: List of allowed scopes
+        is_active:
+          type: boolean
+          description: Whether the API key is active
+        expires_at:
+          type: string
+          format: date-time
+          description: API key expiration date
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        last_used:
+          type: string
+          format: date-time
+          description: Last usage timestamp
+        usage_count:
+          type: integer
+          description: Number of times the key was used
+
+    APIKeyCreateResponse:
+      type: object
+      properties:
+        key:
+          type: string
+          description: The actual API key (shown only once)
+        key_info:
+          $ref: '#/components/schemas/APIKeyResponse'
+
+    TestStatus:
+      type: string
+      enum:
+        - draft
+        - scheduled
+        - running
+        - completed
+        - failed
+        - aborted
+        - cancelled
+      description: Test status
+
+    LoadProfileType:
+      type: string
+      enum:
+        - ramp_up
+        - steady_state
+        - spike
+        - soak
+        - custom
+      description: Type of load profile
+
+    TestDefinitionCreate:
+      type: object
+      required:
+        - name
+        - target_url
+        - load_profile_type
+        - duration
+      properties:
+        name:
+          type: string
+          description: Test name
+        description:
+          type: string
+          description: Test description
+        target_url:
+          type: string
+          format: uri
+          description: Target URL for testing
+        method:
+          type: string
+          enum: [GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS]
+          default: GET
+          description: HTTP method
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: HTTP headers
+        body_template:
+          type: string
+          description: Request body template
+        auth_type:
+          type: string
+          description: Authentication type
+        auth_credentials:
+          type: object
+          description: Authentication credentials
+        load_profile_type:
+          $ref: '#/components/schemas/LoadProfileType'
+        load_profile_config:
+          type: object
+          description: Load profile configuration
+        duration:
+          type: integer
+          description: Test duration in seconds
+        max_concurrent_users:
+          type: integer
+          default: 100
+          description: Maximum concurrent users
+        rps_limit:
+          type: integer
+          default: 1000
+          description: RPS limit
+        timeout:
+          type: integer
+          default: 30
+          description: Request timeout in seconds
+        region:
+          type: string
+          default: us-east-1
+          description: Test region
+        use_proxies:
+          type: boolean
+          default: false
+          description: Whether to use proxies
+        authorization_document_hash:
+          type: string
+          description: Authorization document hash
+        justification:
+          type: string
+          description: Test justification
+
+    TestDefinitionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Test ID
+        name:
+          type: string
+          description: Test name
+        description:
+          type: string
+          description: Test description
+        target_url:
+          type: string
+          description: Target URL
+        method:
+          type: string
+          description: HTTP method
+        load_profile_type:
+          $ref: '#/components/schemas/LoadProfileType'
+        duration:
+          type: integer
+          description: Test duration in seconds
+        max_concurrent_users:
+          type: integer
+          description: Maximum concurrent users
+        rps_limit:
+          type: integer
+          description: RPS limit
+        region:
+          type: string
+          description: Test region
+        status:
+          $ref: '#/components/schemas/TestStatus'
+        is_active:
+          type: boolean
+          description: Whether the test is active
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        created_by:
+          type: integer
+          description: Creator user ID
+
+    TestStartRequest:
+      type: object
+      properties:
+        test_id:
+          type: integer
+          description: Test ID
+        overrides:
+          type: object
+          description: Test configuration overrides
+
+    TestStopRequest:
+      type: object
+      properties:
+        test_id:
+          type: integer
+          description: Test ID
+        reason:
+          type: string
+          description: Stop reason
+
+    TestExecutionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Execution ID
+        execution_id:
+          type: string
+          description: Unique execution identifier
+        test_definition_id:
+          type: integer
+          description: Test definition ID
+        status:
+          $ref: '#/components/schemas/TestStatus'
+        started_at:
+          type: string
+          format: date-time
+          description: Start timestamp
+        completed_at:
+          type: string
+          format: date-time
+          description: Completion timestamp
+        duration_actual:
+          type: integer
+          description: Actual duration in seconds
+        allocated_users:
+          type: integer
+          description: Allocated users
+        allocated_rps:
+          type: integer
+          description: Allocated RPS
+        runner_type:
+          type: string
+          description: Runner type (k6, python, go)
+        runner_instance:
+          type: string
+          description: Runner instance ID
+        error_message:
+          type: string
+          description: Error message
+        abort_reason:
+          type: string
+          description: Abort reason
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    TestListResponse:
+      type: object
+      properties:
+        tests:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestDefinitionResponse'
+        total:
+          type: integer
+          description: Total number of tests
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Items per page
+        pages:
+          type: integer
+          description: Total number of pages
+
+    UsageLimits:
+      type: object
+      properties:
+        max_daily_rps:
+          type: integer
+          description: Maximum daily RPS
+        max_concurrent_tests:
+          type: integer
+          description: Maximum concurrent tests
+        max_test_duration:
+          type: integer
+          description: Maximum test duration
+        max_users_per_organization:
+          type: integer
+          description: Maximum users per organization
+        max_api_keys:
+          type: integer
+          description: Maximum API keys
+
+    CurrentUsage:
+      type: object
+      properties:
+        daily_rps:
+          type: integer
+          description: Current daily RPS
+        concurrent_tests:
+          type: integer
+          description: Current concurrent tests
+        test_duration:
+          type: integer
+          description: Current test duration
+        users_in_organization:
+          type: integer
+          description: Current users in organization
+        api_keys_active:
+          type: integer
+          description: Active API keys
+
+    UsageReport:
+      type: object
+      properties:
+        limits:
+          $ref: '#/components/schemas/UsageLimits'
+        current:
+          $ref: '#/components/schemas/CurrentUsage'
+        remaining:
+          $ref: '#/components/schemas/UsageLimits'
+        usage_percentage:
+          type: object
+          additionalProperties:
+            type: number
+          description: Usage percentages for each metric
+
+    SystemOverview:
+      type: object
+      properties:
+        users:
+          type: object
+          properties:
+            total:
+              type: integer
+            active:
+              type: integer
+            admin:
+              type: integer
+            inactive:
+              type: integer
+        tests:
+          type: object
+          properties:
+            total:
+              type: integer
+            running:
+              type: integer
+            completed:
+              type: integer
+            failed:
+              type: integer
+        system:
+          type: object
+          properties:
+            emergency_kill_switch:
+              type: boolean
+            database_healthy:
+              type: boolean
+            version:
+              type: string
+        recent_activity:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              action:
+                type: string
+              user_email:
+                type: string
+              resource_type:
+                type: string
+              resource_id:
+                type: string
+
+tags:
+  - name: System
+    description: System health and status endpoints
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User management and profile operations
+  - name: Tests
+    description: Load test definition and execution
+  - name: Plans
+    description: Subscription plans and usage management
+  - name: Administration
+    description: Administrative operations (admin only)

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEX-LoadBench - Load Testing Platform</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for metrics visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- WebSocket and Real-time updates -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="#" class="navbar-brand">
+                <i class="fas fa-bolt" style="color: var(--primary-color); margin-right: 8px;"></i>
+                HEX-LoadBench
+            </a>
+            
+            <div class="navbar-nav">
+                <a href="#dashboard" class="nav-link active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="#tests" class="nav-link" data-page="tests">
+                    <i class="fas fa-flask"></i> Tests
+                </a>
+                <a href="#results" class="nav-link" data-page="results">
+                    <i class="fas fa-chart-line"></i> Results
+                </a>
+                <a href="#settings" class="nav-link" data-page="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link" id="userMenu">
+                        <i class="fas fa-user-circle"></i> 
+                        <span id="userName">User</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.75rem; margin-left: 4px;"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Dashboard Page -->
+            <div id="dashboard-page" class="page-content">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p style="margin: 0; color: var(--gray-600);">Monitor your load testing activities</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showCreateTestModal()">
+                        <i class="fas fa-plus"></i> New Test
+                    </button>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-4 mb-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p style="color: var(--gray-500); font-size: 0.875rem; margin: 0;">Total Tests</p>
+                                    <p style="font-size: 2rem; font-weight: 700; margin: 0; color: var(--primary-color);" id="totalTests">0</p>
+                                </div>
+                                <div style="width: 48px; height: 48px; background-color: rgba(37, 99, 235, 0.1); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-flask" style="color: var(--primary-color); font-size: 1.25rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p style="color: var(--gray-500); font-size: 0.875rem; margin: 0;">Running</p>
+                                    <p style="font-size: 2rem; font-weight: 700; margin: 0; color: var(--success-color);" id="runningTests">0</p>
+                                </div>
+                                <div style="width: 48px; height: 48px; background-color: rgba(34, 197, 94, 0.1); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-play-circle" style="color: var(--success-color); font-size: 1.25rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p style="color: var(--gray-500); font-size: 0.875rem; margin: 0;">Failed</p>
+                                    <p style="font-size: 2rem; font-weight: 700; margin: 0; color: var(--danger-color);" id="failedTests">0</p>
+                                </div>
+                                <div style="width: 48px; height: 48px; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-times-circle" style="color: var(--danger-color); font-size: 1.25rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p style="color: var(--gray-500); font-size: 0.875rem; margin: 0;">API RPS</p>
+                                    <p style="font-size: 2rem; font-weight: 700; margin: 0; color: var(--info-color);" id="currentRPS">0</p>
+                                </div>
+                                <div style="width: 48px; height: 48px; background-color: rgba(6, 182, 212, 0.1); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-tachometer-alt" style="color: var(--info-color); font-size: 1.25rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity and Chart -->
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="margin: 0; font-size: 1.125rem;">Recent Tests</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentTestsList">
+                                <p style="color: var(--gray-500); text-align: center; padding: 2rem;">No recent tests</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="margin: 0; font-size: 1.125rem;">Performance Overview</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="performanceChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tests Page -->
+            <div id="tests-page" class="page-content" style="display: none;">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1>Test Definitions</h1>
+                        <p style="margin: 0; color: var(--gray-600);">Create and manage your load tests</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showCreateTestModal()">
+                        <i class="fas fa-plus"></i> Create Test
+                    </button>
+                </div>
+
+                <!-- Test Filters -->
+                <div class="card mb-6">
+                    <div class="card-body">
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="form-group" style="margin: 0;">
+                                <input type="text" class="form-input" placeholder="Search tests..." id="testSearch">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <select class="form-select" id="statusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="running">Running</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="failed">Failed</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <select class="form-select" id="profileFilter">
+                                    <option value="">All Profiles</option>
+                                    <option value="ramp_up">Ramp Up</option>
+                                    <option value="steady_state">Steady State</option>
+                                    <option value="spike">Spike</option>
+                                    <option value="soak">Soak</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <button class="btn btn-outline" onclick="loadTests()">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tests List -->
+                <div class="card">
+                    <div class="card-body">
+                        <div id="testsList">
+                            <div class="text-center" style="padding: 3rem;">
+                                <div class="spinner" style="margin: 0 auto 1rem;"></div>
+                                <p style="color: var(--gray-500);">Loading tests...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Page -->
+            <div id="results-page" class="page-content" style="display: none;">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1>Test Results</h1>
+                        <p style="margin: 0; color: var(--gray-600);">Analyze your load test results</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="exportResults()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+
+                <div id="resultsContent">
+                    <!-- Results will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings-page" class="page-content" style="display: none;">
+                <div>
+                    <h1>Settings</h1>
+                    <p style="margin: 0; color: var(--gray-600);">Manage your account and preferences</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 mt-6">
+                    <!-- Account Settings -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="margin: 0; font-size: 1.125rem;">Account Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="accountSettingsForm">
+                                <div class="form-group">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" class="form-input" id="fullName">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input" id="email" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Organization</label>
+                                    <input type="text" class="form-input" id="organization" readonly>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- API Keys -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="margin: 0; font-size: 1.125rem;">API Keys</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <button class="btn btn-primary btn-sm" onclick="showCreateApiKeyModal()">
+                                    <i class="fas fa-plus"></i> Create API Key
+                                </button>
+                            </div>
+                            <div id="apiKeysList">
+                                <p style="color: var(--gray-500); text-align: center;">No API keys</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Test Modal -->
+    <div id="createTestModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin: 0;">Create Load Test</h2>
+                <button class="btn btn-ghost" onclick="hideCreateTestModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createTestForm">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Test Name *</label>
+                            <input type="text" class="form-input" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Load Profile *</label>
+                            <select class="form-select" name="load_profile_type" required>
+                                <option value="">Select Profile</option>
+                                <option value="ramp_up">Ramp Up</option>
+                                <option value="steady_state">Steady State</option>
+                                <option value="spike">Spike</option>
+                                <option value="soak">Soak</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Target URL *</label>
+                            <input type="url" class="form-input" name="target_url" required placeholder="https://api.example.com/endpoint">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Method</label>
+                            <select class="form-select" name="method">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="PATCH">PATCH</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Concurrent Users</label>
+                            <input type="number" class="form-input" name="max_concurrent_users" value="100" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duration (seconds)</label>
+                            <input type="number" class="form-input" name="duration" value="600" min="60">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">RPS Limit</label>
+                            <input type="number" class="form-input" name="rps_limit" value="1000" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Region</label>
+                            <select class="form-select" name="region">
+                                <option value="us-east-1">US East 1</option>
+                                <option value="us-west-2">US West 2</option>
+                                <option value="eu-west-1">EU West 1</option>
+                                <option value="ap-southeast-1">AP Southeast 1</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideCreateTestModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createTest()">
+                    <i class="fas fa-rocket"></i> Create Test
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
