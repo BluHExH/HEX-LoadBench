@@ -3,7 +3,14 @@
 ⚠️ **THIS TOOL IS FOR AUTHORIZED PERFORMANCE TESTING ONLY.**
 
 ![HEX-LoadBench Banner](https://github.com/BluHExH/BluHExH/blob/main/IMG_20251107_163029.png)
+<!-- Animated HEX Banner -->
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&pause=1000&color=39FF14&center=true&vCenter=true&width=600&lines=Hacker+Hex;Full+Stack+Developer;Cybersecurity+Enthusiast;Open+Source+Contributor" alt="Typing SVG" />
+</p>
 
+<!-- Gradient HEX Name -->
+<h1 align="center">
+  <img src="https://svg-banners.vercel.app/api?type=glitch&text1=H%20E%20X&width=800&height=200" alt="HEX Banner" />
 ## 🎯 Overview
 
 HEX-LoadBench is a production-ready, multi-tenant load-testing and API stress-test automation platform designed for performance testing, capacity planning, and SLA validation. Built with a microservices architecture supporting multiple programming languages and load testing engines.
@@ -39,7 +46,7 @@ HEX-LoadBench is a production-ready, multi-tenant load-testing and API stress-te
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone <https://github.com/BluHExH/HEX-LoadBench>
    cd HEX-LoadBench
    ```
 
@@ -204,7 +211,7 @@ For Android/Termux users:
 pkg install python nodejs git docker
 
 # Clone and setup
-git clone <repository-url>
+git clone <https://github.com/BluHExH/HEX-LoadBench>
 cd HEX-LoadBench
 cat scripts/banner.txt
 
