@@ -46,7 +46,7 @@ HEX-LoadBench is a production-ready, multi-tenant load-testing and API stress-te
 
 1. **Clone the repository:**
    ```bash
-   git clone <https://github.com/BluHExH/HEX-LoadBench>
+   git clone https://github.com/BluHExH/HEX-LoadBench
    cd HEX-LoadBench
    ```
 
@@ -211,7 +211,7 @@ For Android/Termux users:
 pkg install python nodejs git docker
 
 # Clone and setup
-git clone <https://github.com/BluHExH/HEX-LoadBench>
+git clone https://github.com/BluHExH/HEX-LoadBench
 cd HEX-LoadBench
 cat scripts/banner.txt
 
