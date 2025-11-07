@@ -2,7 +2,7 @@
 
 ⚠️ **THIS TOOL IS FOR AUTHORIZED PERFORMANCE TESTING ONLY.**
 
-![HEX-LoadBench Banner](scripts/banner.txt)
+![HEX-LoadBench Banner](https://github.com/BluHExH/BluHExH/blob/main/IMG_20251107_163029.png)
 
 ## 🎯 Overview
 
